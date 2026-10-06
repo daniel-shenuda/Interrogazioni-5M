@@ -13,5 +13,3 @@ function creaInterrogazione() {
         <h2>Interrogazione di ${materia}</h2>
     `;
 }
-    });
-}
