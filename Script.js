@@ -1,53 +1,113 @@
-let date = [];
+// 1) Incolla qui la config del tuo progetto Firebase (Impostazioni progetto > App web)
+const firebaseConfig = {
+  apiKey: "INCOLLA_QUI",
+  authDomain: "INCOLLA_QUI",
+  projectId: "INCOLLA_QUI",
+  appId: "INCOLLA_QUI"
+};
+// 2) Email Google della tua fidanzata: solo lei potrà modificare
+const EMAIL_ADMIN = "email-di-lei@gmail.com";
 
-function creaInterrogazione() {
+firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
+const ref = firebase.firestore().collection("classe").doc("dati");
 
-    const materia = document.getElementById("materia").value.trim();
+const $ = id => document.getElementById(id);
+let dati = { studenti: [], interrogazioni: [] };
+let dateTemp = [];
+let isAdmin = false;
 
-    if (materia === "") {
-        alert("Inserisci una materia!");
-        return;
-    }
+const esc = s => String(s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const formatData = d => new Date(d + "T12:00:00").toLocaleDateString("it-IT", { weekday: "long", day: "numeric", month: "long" });
 
-    document.getElementById("titoloInterrogazione").textContent =
-        "Interrogazione di " + materia;
-
-    document.getElementById("sezioneDate").style.display = "block";
+function mischia(a) {
+  const r = [...a];
+  for (let i = r.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [r[i], r[j]] = [r[j], r[i]];
+  }
+  return r;
 }
 
+// --- Dati in tempo reale ---
+ref.onSnapshot(doc => {
+  if (doc.exists) dati = { studenti: [], interrogazioni: [], ...doc.data() };
+  if (document.activeElement !== $("studenti")) $("studenti").value = dati.studenti.join("\n");
+  mostra();
+});
 
-function aggiungiData() {
+// --- Login ---
+$("btnLogin").onclick = () => {
+  if (auth.currentUser) auth.signOut();
+  else auth.signInWithPopup(new firebase.auth.GoogleAuthProvider());
+};
+auth.onAuthStateChanged(user => {
+  isAdmin = !!user && user.email === EMAIL_ADMIN;
+  $("admin").hidden = !isAdmin;
+  $("btnLogin").textContent = user ? "Esci" : "Accedi (solo rappresentante)";
+  mostra();
+});
 
-    const input = document.getElementById("dataInterrogazione");
+// --- Compagni ---
+$("salvaStudenti").onclick = async () => {
+  dati.studenti = $("studenti").value.split("\n").map(s => s.trim()).filter(Boolean);
+  await ref.set(dati);
+};
 
-    const data = input.value;
-
-    if (data === "") {
-        alert("Seleziona una data!");
-        return;
-    }
-
-    date.push(data);
-
-    input.value = "";
-
-    mostraDate();
-}
-
-
+// --- Date ---
+$("addData").onclick = () => {
+  const d = $("data").value;
+  if (d && !dateTemp.includes(d)) dateTemp.push(d);
+  mostraDate();
+};
 function mostraDate() {
+  $("dateScelte").innerHTML = dateTemp.sort().map(d => `<span class="chip" data-d="${d}">${formatData(d)} ✕</span>`).join("");
+  document.querySelectorAll(".chip").forEach(c => c.onclick = () => {
+    dateTemp = dateTemp.filter(d => d !== c.dataset.d);
+    mostraDate();
+  });
+}
 
-    const lista = document.getElementById("listaDate");
+// --- Estrazione ---
+$("estrai").onclick = async () => {
+  const materia = $("materia").value.trim();
+  const n = Math.max(1, parseInt($("perGiorno").value) || 1);
+  if (!materia || !dateTemp.length || !dati.studenti.length) {
+    return alert("Inserisci materia, almeno una data e i nomi dei compagni.");
+  }
+  let pool = [];
+  const giorni = [...dateTemp].sort().map(data => {
+    const nomi = [];
+    while (nomi.length < n && nomi.length < dati.studenti.length) {
+      if (!pool.length) pool = mischia(dati.studenti); // nessuno si ripete finché non sono usciti tutti
+      const scelto = pool.pop();
+      if (!nomi.includes(scelto)) nomi.push(scelto);
+    }
+    return { data, nomi };
+  });
+  dati.interrogazioni.push({ materia, giorni });
+  await ref.set(dati);
+  dateTemp = [];
+  $("materia").value = "";
+  mostraDate();
+};
 
-    lista.innerHTML = "";
-
-    date.forEach(function(data) {
-
-        const elemento = document.createElement("li");
-
-        elemento.textContent = data;
-
-        lista.appendChild(elemento);
-
-    });
+// --- Visualizzazione ---
+function mostra() {
+  const el = $("programma");
+  if (!dati.interrogazioni.length) {
+    el.innerHTML = "<p>Nessuna interrogazione programmata.</p>";
+    return;
+  }
+  el.innerHTML = dati.interrogazioni.map((m, i) => `
+    <div class="materia">
+      <h3>${esc(m.materia)}</h3>
+      ${m.giorni.map(g => `<div class="giorno"><strong>${formatData(g.data)}</strong>: ${g.nomi.map(esc).join(", ")}</div>`).join("")}
+      ${isAdmin ? `<button class="elimina" data-i="${i}">Elimina materia</button>` : ""}
+    </div>`).join("");
+  document.querySelectorAll(".elimina").forEach(b => b.onclick = async () => {
+    if (!confirm("Eliminare questa materia?")) return;
+    dati.interrogazioni.splice(+b.dataset.i, 1);
+    await ref.set(dati);
+  });
 }
