@@ -15,15 +15,31 @@ function aggiungiStudente() {
     mostraStudenti();
 }
 
+function eliminaStudente(indice) {
+    studenti.splice(indice, 1);
+
+    mostraStudenti();
+}
+
 function mostraStudenti() {
     const lista = document.getElementById("listaStudenti");
 
     lista.innerHTML = "";
 
-    studenti.forEach(function(nome) {
+    studenti.forEach(function(nome, indice) {
         const elemento = document.createElement("li");
 
-        elemento.textContent = nome;
+        elemento.textContent = nome + " ";
+
+        const pulsante = document.createElement("button");
+
+        pulsante.textContent = "Elimina";
+
+        pulsante.onclick = function() {
+            eliminaStudente(indice);
+        };
+
+        elemento.appendChild(pulsante);
 
         lista.appendChild(elemento);
     });
