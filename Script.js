@@ -75,16 +75,26 @@ $("estrai").onclick = async () => {
   if (!materia || !dateTemp.length || !dati.studenti.length) {
     return alert("Inserisci materia, almeno una data e i nomi dei compagni.");
   }
+  // chi è già stato estratto in quella data in un'altra materia
+  const occupati = data => new Set(
+    dati.interrogazioni.flatMap(m => m.giorni.filter(g => g.data === data).flatMap(g => g.nomi))
+  );
   let pool = [];
+  const avvisi = [];
   const giorni = [...dateTemp].sort().map(data => {
+    const gia = occupati(data);
+    const liberi = dati.studenti.filter(s => !gia.has(s));
+    const quanti = Math.min(n, liberi.length);
     const nomi = [];
-    while (nomi.length < n && nomi.length < dati.studenti.length) {
-      if (!pool.length) pool = mischia(dati.studenti); // nessuno si ripete finché non sono usciti tutti
+    while (nomi.length < quanti) {
+      if (!pool.length) pool = mischia(liberi); // nessuno si ripete finché non sono usciti tutti
       const scelto = pool.pop();
-      if (!nomi.includes(scelto)) nomi.push(scelto);
+      if (liberi.includes(scelto) && !nomi.includes(scelto)) nomi.push(scelto);
     }
+    if (quanti < n) avvisi.push(`${formatData(data)}: solo ${quanti} persone libere su ${n} richieste`);
     return { data, nomi };
   });
+  if (avvisi.length) alert("Attenzione:\n" + avvisi.join("\n"));
   dati.interrogazioni.push({ materia, giorni });
   await ref.set(dati);
   dateTemp = [];
