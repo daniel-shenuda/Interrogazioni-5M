@@ -1,51 +1,47 @@
 <!DOCTYPE html>
 <html lang="it">
-
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-    <title>Interrogazioni</title>
-
-    <link rel="stylesheet" href="Style.css">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Interrogazioni</title>
+  <link rel="stylesheet" href="Style.css">
 </head>
-
 <body>
+  <header>
+    <h1>📚 Calendario Interrogazioni</h1>
+    <button id="btnLogin">Accedi (solo rappresentante)</button>
+  </header>
 
-    <h1>🌸 Interrogazioni</h1>
+  <main>
+    <section id="admin" class="card" hidden>
+      <h2>Pannello rappresentante</h2>
 
-    <h2>Nuova interrogazione</h2>
+      <h3>Compagni di classe</h3>
+      <textarea id="studenti" rows="8" placeholder="Un nome per riga"></textarea>
+      <button id="salvaStudenti">Salva nomi</button>
 
-    <label for="materia">Materia</label>
+      <h3>Nuova materia</h3>
+      <div class="riga">
+        <input id="materia" placeholder="Materia (es. Storia)">
+        <label>Persone al giorno <input type="number" id="perGiorno" value="4" min="1"></label>
+      </div>
+      <div class="riga">
+        <input type="date" id="data">
+        <button id="addData">+ Aggiungi data</button>
+      </div>
+      <div id="dateScelte" class="chips"></div>
+      <button id="estrai" class="grande">🎲 Estrai e salva</button>
+    </section>
 
-    <input 
-        type="text" 
-        id="materia" 
-        placeholder="Es. Spagnolo"
-    >
+    <section>
+      <h2>Programma</h2>
+      <div id="programma"></div>
+    </section>
+  </main>
 
-    <button onclick="creaInterrogazione()">
-        Crea
-    </button>
-
-    <h2 id="titoloInterrogazione"></h2>
-
-    <div id="sezioneDate" style="display: none;">
-
-        <h3>Date</h3>
-
-        <input type="date" id="dataInterrogazione">
-
-        <button onclick="aggiungiData()">
-            Aggiungi data
-        </button>
-
-        <ul id="listaDate"></ul>
-
-    </div>
-
-    <script src="Script.js"></script>
-
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+  <script src="Script.js"></script>
 </body>
-
 </html>
