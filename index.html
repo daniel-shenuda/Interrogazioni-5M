@@ -4,7 +4,67 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Interrogazioni</title>
-  <link rel="stylesheet" href="Style.css">
+  <style>
+:root {
+  --rosa: #ec4899;
+  --rosa-scuro: #be185d;
+  --rosa-chiaro: #fce7f3;
+  --testo: #4a1d36;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  font-family: system-ui, sans-serif;
+  background: var(--rosa-chiaro);
+  color: var(--testo);
+}
+header {
+  background: var(--rosa);
+  color: #fff;
+  padding: 16px 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+h1 { margin: 0; font-size: 1.4rem; }
+main { max-width: 800px; margin: 20px auto; padding: 0 16px; }
+.card, .materia {
+  background: #fff;
+  border-radius: 14px;
+  padding: 16px;
+  margin-bottom: 16px;
+  box-shadow: 0 2px 8px rgba(190, 24, 93, .15);
+}
+h2, h3 { color: var(--rosa-scuro); }
+input, textarea {
+  padding: 8px;
+  border: 1px solid #f9a8d4;
+  border-radius: 8px;
+  font: inherit;
+}
+textarea { width: 100%; margin-bottom: 8px; }
+button {
+  background: var(--rosa);
+  color: #fff;
+  border: 0;
+  border-radius: 8px;
+  padding: 8px 14px;
+  font: inherit;
+  cursor: pointer;
+}
+button:hover { background: var(--rosa-scuro); }
+header button { background: #fff; color: var(--rosa-scuro); }
+.grande { margin-top: 12px; padding: 12px 20px; font-weight: 600; }
+.riga { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 8px; align-items: center; }
+.chips { display: flex; gap: 6px; flex-wrap: wrap; }
+.chip { background: var(--rosa-chiaro); border-radius: 20px; padding: 4px 10px; cursor: pointer; }
+.giorno { padding: 8px 0; border-top: 1px solid var(--rosa-chiaro); }
+.giorno strong { text-transform: capitalize; }
+.elimina { background: transparent; color: var(--rosa-scuro); border: 1px solid var(--rosa); }
+
+</style>
 </head>
 <body>
   <header>
