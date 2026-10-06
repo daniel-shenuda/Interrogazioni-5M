@@ -23,7 +23,20 @@ function eliminaStudente(indice) {
 
 function mostraStudenti() {
     const lista = document.getElementById("listaStudenti");
+function creaInterrogazione() {
 
+    const materia = document.getElementById("materia").value.trim();
+
+    if (materia === "") {
+        return;
+    }
+
+    const risultato = document.getElementById("interrogazione");
+
+    risultato.innerHTML = `
+        <h2>Interrogazione di ${materia}</h2>
+    `;
+}
     lista.innerHTML = "";
 
     studenti.forEach(function(nome, indice) {
