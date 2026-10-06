@@ -6,7 +6,7 @@ const firebaseConfig = {
   appId: "1:196857857597:web:e938e2bcff813868fb4c54"
 };
 // 2) Email Google della tua fidanzata: solo lei potrà modificare
-const EMAIL_ADMIN = "arpaia.alisia.liceofanti.edu.it";
+const EMAIL_ADMIN = ["arpaia.alisia.liceofanti.edu.it", "danielbsnss4@gmail.com"];
 
 firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
