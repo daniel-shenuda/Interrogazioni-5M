@@ -1,12 +1,12 @@
 // 1) Incolla qui la config del tuo progetto Firebase (Impostazioni progetto > App web)
 const firebaseConfig = {
-  apiKey: "INCOLLA_QUI",
-  authDomain: "INCOLLA_QUI",
-  projectId: "INCOLLA_QUI",
-  appId: "INCOLLA_QUI"
+  apiKey: "AIzaSyB7EuNjoNM99GPNtx_y0tcKgbxOKkCfetM",
+  authDomain: "interrogazioni-efcdc.firebaseapp.com",
+  projectId: "interrogazioni-efcdc",
+  appId: "1:196857857597:web:e938e2bcff813868fb4c54"
 };
 // 2) Email Google della tua fidanzata: solo lei potrà modificare
-const EMAIL_ADMIN = "email-di-lei@gmail.com";
+const EMAIL_ADMIN = "arpaia.alisia.liceofanti.edu.it";
 
 firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
@@ -39,7 +39,8 @@ ref.onSnapshot(doc => {
 // --- Login ---
 $("btnLogin").onclick = () => {
   if (auth.currentUser) auth.signOut();
-  else auth.signInWithPopup(new firebase.auth.GoogleAuthProvider());
+  else auth.signInWithPopup(new firebase.auth.GoogleAuthProvider())
+    .catch(e => alert("Errore login: " + e.code + "\n" + e.message));
 };
 auth.onAuthStateChanged(user => {
   isAdmin = !!user && user.email === EMAIL_ADMIN;
