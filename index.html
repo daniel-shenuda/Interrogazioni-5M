@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="it">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -11,19 +12,26 @@
 
 <body>
 
-    <h1>Interrogazioni</h1>
+    <h1>🌸 Interrogazioni</h1>
 
-    <h2>Aggiungi studente</h2>
+    <h2>Nuova interrogazione</h2>
 
-    <input type="text" id="nomeStudente" placeholder="Nome e cognome">
+    <label for="materia">Materia</label>
 
-    <button onclick="aggiungiStudente()">Aggiungi</button>
+    <input 
+        type="text" 
+        id="materia" 
+        placeholder="Es. Spagnolo"
+    >
 
-    <h2>Studenti</h2>
+    <button onclick="creaInterrogazione()">
+        Crea
+    </button>
 
-    <ul id="listaStudenti"></ul>
+    <div id="interrogazione"></div>
 
     <script src="Script.js"></script>
 
 </body>
+
 </html>
