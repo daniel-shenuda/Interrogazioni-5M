@@ -9,21 +9,10 @@ function creaInterrogazione() {
         return;
     }
 
-    const risultato = document.getElementById("interrogazione");
+    document.getElementById("titoloInterrogazione").textContent =
+        "Interrogazione di " + materia;
 
-    risultato.innerHTML = `
-        <h2>Interrogazione di ${materia}</h2>
-
-        <h3>Date</h3>
-
-        <input type="date" id="dataInterrogazione">
-
-        <button onclick="aggiungiData()">
-            Aggiungi data
-        </button>
-
-        <ul id="listaDate"></ul>
-    `;
+    document.getElementById("sezioneDate").style.display = "block";
 }
 
 
