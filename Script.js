@@ -43,9 +43,11 @@ $("btnLogin").onclick = () => {
     .catch(e => alert("Errore login: " + e.code + "\n" + e.message));
 };
 auth.onAuthStateChanged(user => {
- isAdmin = !!user && EMAIL_ADMIN.includes(user.email);
+  const admins = [].concat(EMAIL_ADMIN).map(e => e.toLowerCase());
+  isAdmin = !!user && admins.includes((user.email || "").toLowerCase());
   $("admin").hidden = !isAdmin;
-  $("btnLogin").textContent = user ? "Esci" : "Accedi (solo rappresentante)";
+  $("btnLogin").textContent = user ? `Esci (${user.email})` : "Accedi (solo rappresentante)";
+  if (user && !isAdmin) alert("Hai fatto l'accesso come " + user.email + ", ma questa email non è nell'elenco dei rappresentanti.");
   mostra();
 });
 
