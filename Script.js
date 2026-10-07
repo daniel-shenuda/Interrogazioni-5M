@@ -19,6 +19,7 @@ const aperti = new Set(); // cartelle (materie) aperte
 
 const esc = s => String(s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 const formatData = d => new Date(d + "T12:00:00").toLocaleDateString("it-IT", { weekday: "long", day: "numeric", month: "long" });
+const dataBreve = d => new Date(d + "T12:00:00").toLocaleDateString("it-IT", { day: "numeric", month: "short" });
 
 function mischia(a) {
   const r = [...a];
@@ -83,8 +84,7 @@ $("estrai").onclick = async () => {
   const date = [...dateTemp].sort();
   const k = date.length;
 
-  // dimensione di ogni gruppo: tutti interrogati una sola volta nella materia
-    // dimensione di ogni gruppo: si riempiono prima le prime date (n a testa), l'ultima prende il resto
+  // dimensione di ogni gruppo: si riempiono prima le prime date (n a testa), l'ultima prende il resto
   let dim;
   if (S >= k * n) { // più persone dei posti: gli extra vanno nei primi giorni (gruppi da n+1)
     const extra = S - k * n;
@@ -130,18 +130,79 @@ function mostra() {
     el.innerHTML = "<p>Nessuna interrogazione programmata.</p>";
     return;
   }
-  el.innerHTML = dati.interrogazioni.map((m, i) => `
+  el.innerHTML = dati.interrogazioni.map((m, i) => {
+    const inMateria = new Set(m.giorni.flatMap(g => g.nomi));
+    const mancanti = dati.studenti.filter(s => !inMateria.has(s));
+    return `
     <details class="materia" data-m="${esc(m.materia)}" ${aperti.has(m.materia) ? "open" : ""}>
       <summary>📁 ${esc(m.materia)}</summary>
-      ${m.giorni.map(g => `<div class="giorno"><strong>${formatData(g.data)}</strong>: ${g.nomi.map(esc).join(", ")}</div>`).join("")}
+      ${m.giorni.map((g, gi) => `
+        <div class="giorno"><strong>${formatData(g.data)}</strong>: ${
+          isAdmin
+            ? g.nomi.map((nome, ni) => `
+              <span class="nome">${esc(nome)}
+                <select class="sposta" data-i="${i}" data-g="${gi}" data-n="${ni}" title="Sposta in un'altra data">
+                  <option value="">↔</option>
+                  ${m.giorni.map((x, xi) => xi === gi ? "" : `<option value="${xi}">${dataBreve(x.data)}</option>`).join("")}
+                </select>
+                <button class="rimuovi" data-i="${i}" data-g="${gi}" data-n="${ni}" title="Rimuovi">✕</button>
+              </span>`).join(" ")
+              + (mancanti.length ? `
+              <select class="aggiungi" data-i="${i}" data-g="${gi}">
+                <option value="">+ aggiungi</option>
+                ${mancanti.map(s => `<option value="${esc(s)}">${esc(s)}</option>`).join("")}
+              </select>` : "")
+            : g.nomi.map(esc).join(", ")
+        }</div>`).join("")}
       ${isAdmin ? `<button class="elimina" data-i="${i}">Elimina materia</button>` : ""}
-    </details>`).join("");
+    </details>`;
+  }).join("");
+
   el.querySelectorAll("details").forEach(d => d.ontoggle = () => {
     d.open ? aperti.add(d.dataset.m) : aperti.delete(d.dataset.m);
   });
-  el.querySelectorAll(".elimina").forEach(b => b.onclick = async () => {
-    if (!confirm("Eliminare questa materia?")) return;
-    dati.interrogazioni.splice(+b.dataset.i, 1);
-    await ref.set(dati);
-  });
+
+  // controlla se la persona è già interrogata lo stesso giorno in un'altra materia
+  const confermaConflitto = (nome, data, materiaIdx) => {
+    const altre = dati.interrogazioni
+      .filter((_, k) => k !== materiaIdx)
+      .filter(x => x.giorni.some(g => g.data === data && g.nomi.includes(nome)))
+      .map(x => x.materia);
+    return !altre.length || confirm(`${nome} è già interrogato/a il ${formatData(data)} in: ${altre.join(", ")}.\nVuoi procedere lo stesso?`);
+  };
+
+  el.onclick = async e => {
+    const b = e.target.closest("button");
+    if (!b || !isAdmin) return;
+    if (b.classList.contains("elimina")) {
+      if (!confirm("Eliminare questa materia?")) return;
+      dati.interrogazioni.splice(+b.dataset.i, 1);
+      await ref.set(dati);
+    } else if (b.classList.contains("rimuovi")) {
+      const g = dati.interrogazioni[+b.dataset.i].giorni[+b.dataset.g];
+      const nome = g.nomi[+b.dataset.n];
+      if (!confirm(`Rimuovere ${nome} da questa data?`)) return;
+      g.nomi.splice(+b.dataset.n, 1);
+      await ref.set(dati);
+    }
+  };
+
+  el.onchange = async e => {
+    const s = e.target;
+    if (!isAdmin || !s.value) return;
+    const mi = +s.dataset.i, gi = +s.dataset.g;
+    const m = dati.interrogazioni[mi];
+    if (s.classList.contains("sposta")) {
+      const nome = m.giorni[gi].nomi[+s.dataset.n];
+      const dest = m.giorni[+s.value];
+      if (!confermaConflitto(nome, dest.data, mi)) return mostra();
+      m.giorni[gi].nomi.splice(+s.dataset.n, 1);
+      dest.nomi.push(nome);
+      await ref.set(dati);
+    } else if (s.classList.contains("aggiungi")) {
+      if (!confermaConflitto(s.value, m.giorni[gi].data, mi)) return mostra();
+      m.giorni[gi].nomi.push(s.value);
+      await ref.set(dati);
+    }
+  };
 }
