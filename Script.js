@@ -84,12 +84,13 @@ $("estrai").onclick = async () => {
   const k = date.length;
 
   // dimensione di ogni gruppo: tutti interrogati una sola volta nella materia
+    // dimensione di ogni gruppo: si riempiono prima le prime date (n a testa), l'ultima prende il resto
   let dim;
   if (S >= k * n) { // più persone dei posti: gli extra vanno nei primi giorni (gruppi da n+1)
     const extra = S - k * n;
     dim = date.map((_, i) => n + Math.floor(extra / k) + (i < extra % k ? 1 : 0));
-  } else { // meno persone dei posti: gruppi il più possibile uguali
-    dim = date.map((_, i) => Math.floor(S / k) + (i < S % k ? 1 : 0));
+  } else { // meno persone dei posti: prima date piene, poi il resto, le ultime eventualmente vuote
+    dim = date.map((_, i) => Math.max(0, Math.min(n, S - i * n)));
   }
 
   // chi è già stato estratto lo stesso giorno in un'altra materia
