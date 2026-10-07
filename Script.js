@@ -1,12 +1,11 @@
-// 1) Incolla qui la config del tuo progetto Firebase (Impostazioni progetto > App web)
 const firebaseConfig = {
   apiKey: "AIzaSyB7EuNjoNM99GPNtx_y0tcKgbxOKkCfetM",
   authDomain: "interrogazioni-efcdc.firebaseapp.com",
   projectId: "interrogazioni-efcdc",
   appId: "1:196857857597:web:e938e2bcff813868fb4c54"
 };
-// 2) Email Google della tua fidanzata: solo lei potrà modificare
-const EMAIL_ADMIN = ["arpaia.alisia.liceofanti.edu.it", "danielbsnss4@gmail.com"];
+// Email Google di chi può modificare (anche più di una)
+const EMAIL_ADMIN = ["arpaia.alisia@liceofanti.edu.it", "danielbsnss4@gmail.com"];
 
 firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
@@ -16,6 +15,7 @@ const $ = id => document.getElementById(id);
 let dati = { studenti: [], interrogazioni: [] };
 let dateTemp = [];
 let isAdmin = false;
+const aperti = new Set(); // cartelle (materie) aperte
 
 const esc = s => String(s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 const formatData = d => new Date(d + "T12:00:00").toLocaleDateString("it-IT", { weekday: "long", day: "numeric", month: "long" });
@@ -55,6 +55,7 @@ auth.onAuthStateChanged(user => {
 $("salvaStudenti").onclick = async () => {
   dati.studenti = $("studenti").value.split("\n").map(s => s.trim()).filter(Boolean);
   await ref.set(dati);
+  alert("Nomi salvati (" + dati.studenti.length + ")");
 };
 
 // --- Date ---
@@ -75,37 +76,53 @@ function mostraDate() {
 $("estrai").onclick = async () => {
   const materia = $("materia").value.trim();
   const n = Math.max(1, parseInt($("perGiorno").value) || 1);
-  if (!materia || !dateTemp.length || !dati.studenti.length) {
+  const S = dati.studenti.length;
+  if (!materia || !dateTemp.length || !S) {
     return alert("Inserisci materia, almeno una data e i nomi dei compagni.");
   }
-  // chi è già stato estratto in quella data in un'altra materia
+  const date = [...dateTemp].sort();
+  const k = date.length;
+
+  // dimensione di ogni gruppo: tutti interrogati una sola volta nella materia
+  let dim;
+  if (S >= k * n) { // più persone dei posti: gli extra vanno nei primi giorni (gruppi da n+1)
+    const extra = S - k * n;
+    dim = date.map((_, i) => n + Math.floor(extra / k) + (i < extra % k ? 1 : 0));
+  } else { // meno persone dei posti: gruppi il più possibile uguali
+    dim = date.map((_, i) => Math.floor(S / k) + (i < S % k ? 1 : 0));
+  }
+
+  // chi è già stato estratto lo stesso giorno in un'altra materia
   const occupati = data => new Set(
     dati.interrogazioni.flatMap(m => m.giorni.filter(g => g.data === data).flatMap(g => g.nomi))
   );
-  let pool = [];
-  const avvisi = [];
-  const giorni = [...dateTemp].sort().map(data => {
-    const gia = occupati(data);
-    const liberi = dati.studenti.filter(s => !gia.has(s));
-    const quanti = Math.min(n, liberi.length);
-    const nomi = [];
-    while (nomi.length < quanti) {
-      if (!pool.length) pool = mischia(liberi); // nessuno si ripete finché non sono usciti tutti
-      const scelto = pool.pop();
-      if (liberi.includes(scelto) && !nomi.includes(scelto)) nomi.push(scelto);
+  const rimasti = mischia(dati.studenti);
+  const giorni = date.map(data => ({ data, nomi: [], gia: occupati(data) }));
+
+  giorni.forEach((g, i) => {
+    for (let j = 0; j < dim[i]; j++) {
+      const idx = rimasti.findIndex(s => !g.gia.has(s));
+      if (idx < 0) break;
+      g.nomi.push(rimasti.splice(idx, 1)[0]);
     }
-    if (quanti < n) avvisi.push(`${formatData(data)}: solo ${quanti} persone libere su ${n} richieste`);
-    return { data, nomi };
   });
-  if (avvisi.length) alert("Attenzione:\n" + avvisi.join("\n"));
-  dati.interrogazioni.push({ materia, giorni });
+  const nonPiazzati = [];
+  rimasti.forEach(s => { // chi è rimasto fuori va nel giorno libero con meno persone
+    const g = giorni.filter(g => !g.gia.has(s)).sort((a, b) => a.nomi.length - b.nomi.length)[0];
+    if (g) g.nomi.push(s); else nonPiazzati.push(s);
+  });
+  if (nonPiazzati.length) {
+    alert("Non è stato possibile assegnare questi nomi (già occupati in altre materie in tutte le date scelte):\n" + nonPiazzati.join(", "));
+  }
+
+  dati.interrogazioni.push({ materia, giorni: giorni.map(({ data, nomi }) => ({ data, nomi })) });
   await ref.set(dati);
   dateTemp = [];
   $("materia").value = "";
   mostraDate();
 };
 
-// --- Visualizzazione ---
+// --- Visualizzazione: ogni materia è una "cartella" ---
 function mostra() {
   const el = $("programma");
   if (!dati.interrogazioni.length) {
@@ -113,12 +130,15 @@ function mostra() {
     return;
   }
   el.innerHTML = dati.interrogazioni.map((m, i) => `
-    <div class="materia">
-      <h3>${esc(m.materia)}</h3>
+    <details class="materia" data-m="${esc(m.materia)}" ${aperti.has(m.materia) ? "open" : ""}>
+      <summary>📁 ${esc(m.materia)}</summary>
       ${m.giorni.map(g => `<div class="giorno"><strong>${formatData(g.data)}</strong>: ${g.nomi.map(esc).join(", ")}</div>`).join("")}
       ${isAdmin ? `<button class="elimina" data-i="${i}">Elimina materia</button>` : ""}
-    </div>`).join("");
-  document.querySelectorAll(".elimina").forEach(b => b.onclick = async () => {
+    </details>`).join("");
+  el.querySelectorAll("details").forEach(d => d.ontoggle = () => {
+    d.open ? aperti.add(d.dataset.m) : aperti.delete(d.dataset.m);
+  });
+  el.querySelectorAll(".elimina").forEach(b => b.onclick = async () => {
     if (!confirm("Eliminare questa materia?")) return;
     dati.interrogazioni.splice(+b.dataset.i, 1);
     await ref.set(dati);
