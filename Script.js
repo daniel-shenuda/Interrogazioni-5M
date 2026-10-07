@@ -43,7 +43,7 @@ $("btnLogin").onclick = () => {
     .catch(e => alert("Errore login: " + e.code + "\n" + e.message));
 };
 auth.onAuthStateChanged(user => {
-  isAdmin = !!user && user.email === EMAIL_ADMIN;
+ isAdmin = !!user && EMAIL_ADMIN.includes(user.email);
   $("admin").hidden = !isAdmin;
   $("btnLogin").textContent = user ? "Esci" : "Accedi (solo rappresentante)";
   mostra();
